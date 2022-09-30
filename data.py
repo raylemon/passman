@@ -3,6 +3,15 @@ class User:
         self.login = login
         self.password = password
 
+    def __repr__(self):
+        return f"{self.login} {self.password}"
+
+    def __hash__(self):
+        return hash(self.login + self.password)
+
+    def __eq__(self, other):
+        return self.login == other.login
+
 
 class VaultItem:
     def __init__(self, name: str, login: str, password: str) -> None:
@@ -12,8 +21,7 @@ class VaultItem:
 
 
 class Vault:
-    def __init__(self) -> None:
-        self.user_vault: dict[User, set[VaultItem]] = {}
+    user_vault: dict[User, set[VaultItem]] = {}
 
     def add_user(self, user: User) -> bool:
         if self.user_exists(user):
@@ -58,12 +66,18 @@ class Vault:
         return self.delete_item(user, old_item) and self.add_item(user, new_item)
 
     def add_item(self, user: User, item: VaultItem) -> bool:
-        self.user_vault[user].add(item)
-        return True
+        if item in self.user_vault[user]:
+            return False
+        else:
+            self.user_vault[user].add(item)
+            return True
 
     def delete_item(self, user: User, item: VaultItem) -> bool:
-        self.user_vault[user].remove(item)
-        return True
+        try:
+            self.user_vault[user].remove(item)
+            return True
+        except KeyError:
+            return False
 
     def find_items(self, user: User, search_string: str) -> list[VaultItem]:
         lst = []
