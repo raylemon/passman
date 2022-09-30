@@ -1,4 +1,4 @@
-from data import User, Vault, VaultItem
+from model.data import User, Vault, VaultItem
 
 
 class TestVault:
