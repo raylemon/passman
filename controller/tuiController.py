@@ -48,7 +48,7 @@ class TuiController:
             )
 
             new_entry = VaultItem(name=new_name, login=new_login, password=new_password)
-            self.vault.edit_item(self.current_user, entry, new_entry)
+            self.vault.edit_item(entry, new_entry)
         else:
             tui.error("No entries found at this name.")
 
@@ -60,7 +60,7 @@ class TuiController:
         entry_id = tui.ask_user("Type entry name: ")
         entry = self.vault.get_item(self.current_user, entry_id)
         if entry is not None:
-            self.vault.delete_item(self.current_user, entry)
+            self.vault.delete_item(entry)
         else:
             tui.error("No entries found at this name.")
 
@@ -125,7 +125,7 @@ class TuiController:
         log_in = tui.ask_user("Type your username: ")
         password = tui.ask_user("Type your password: ")
         user = self.vault.get_user(log_in)
-        if user is None or not self.vault.validate_user(user):
+        if user is None or user.password != password:
             tui.error("Unknown user or password mismatch. Try Again")
 
         else:

@@ -1,51 +1,47 @@
 import sqlite3
+from dataclasses import dataclass, field
 
 
+@dataclass
 class User:
-    def __init__(self, login: str, password: str, uid: int = -1) -> None:
-        self.login = login
-        self.password = password
-        self.uid = uid
-
-    def __repr__(self):
-        return f"{self.login} {self.password}"
-
-    def __hash__(self):
-        return hash(self.login + self.password)
-
-    def __eq__(self, other):
-        return self.login == other.login
+    """
+    Data class User, used to store user in database
+    """
+    login: str
+    password: str
+    uid: int = field(default=-1)
 
     def to_array(self) -> list[str]:
+        """
+        Helper method for database storage
+        :return: attributes in array
+        """
         return [self.login, self.password]
 
 
+@dataclass
 class VaultItem:
-    def __init__(self, name: str, login: str, password: str, iid: int = -1) -> None:
-        self.name = name
-        self.login = login
-        self.password = password
-        self.iid = iid
+    """
+    Data class VaultItem, used to store item in database
+    """
+    name: str
+    login: str
+    password: str
+    iid: int = field(default=-1)
 
     def to_array(self) -> list[str]:
+        """
+        Helper method for database storage
+        :return: attributes in array
+        """
         return [self.name, self.login, self.password]
-
-    def __repr__(self):
-        return f"name = {self.name}, login = {self.login}, pass= {self.password}"
-
-    def __eq__(self, other):
-        return (
-            self.name == other.name
-            and self.login == other.login
-            and self.password == other.password
-        )
 
 
 class Vault:
     def __init__(self, db_path: str):
         """
-
-        :param db_path:
+        Create Vault
+        :param db_path: path of database file
         """
         self.connection = sqlite3.connect(db_path)
         if not self.table_exists():
@@ -53,15 +49,15 @@ class Vault:
 
     def __del__(self):
         """
-
-        :return:
+        Close connection
+        :return: Nothing
         """
         self.connection.close()
 
     def table_exists(self) -> bool:
         """
-
-        :return:
+        Check if tables exists in database
+        :return: True if table exists, else false
         """
         sql_test = "SELECT * FROM sqlite_master WHERE name = ? AND TYPE = ?"
         try:
@@ -72,8 +68,8 @@ class Vault:
 
     def create_tables(self) -> None:
         """
-
-        :return:
+        Creates tables
+        :return: Nothing
         """
 
         sql_create_users = """ CREATE TABLE IF NOT EXISTS T_Users (
@@ -99,9 +95,9 @@ class Vault:
 
     def add_user(self, user: User) -> bool:
         """
-
-        :param user:
-        :return:
+        Add a user in database
+        :param user: user to store in database
+        :return: True if user is successfully stored
         """
         sql_add_user = "INSERT INTO T_Users (login, password) VALUES (?,?)"
         try:
@@ -113,9 +109,9 @@ class Vault:
 
     def remove_user(self, user: User) -> bool:
         """
-
-        :param user:
-        :return:
+        Remove a user in database
+        :param user: user to remove
+        :return: true if user is successfully removed
         """
         sql_remove_user = "DELETE FROM T_Users WHERE uid = ?"
         try:
@@ -127,9 +123,9 @@ class Vault:
 
     def user_exists(self, user: User) -> bool:
         """
-
-        :param user:
-        :return:
+        Check if user exists in database
+        :param user: user to check
+        :return: True if user exists
         """
         sql_query = "SELECT uid FROM T_Users WHERE login = ?"
         try:
@@ -142,9 +138,9 @@ class Vault:
 
     def validate_user(self, user: User) -> bool:
         """
-
-        :param user:
-        :return:
+        Validate user and password
+        :param user: user to validate
+        :return: True if user is validated
         """
         sql_query = "SELECT COUNT(uid) FROM T_Users WHERE login = ? AND password = ?"
         try:
@@ -155,9 +151,9 @@ class Vault:
 
     def get_user(self, login: str) -> User | None:
         """
-
-        :param login:
-        :return:
+        Get a user by its login
+        :param login: login (must be unique!)
+        :return: User if found, else Nothing
         """
         sql_query = "SELECT * FROM T_Users WHERE login = ?"
         try:
@@ -171,9 +167,9 @@ class Vault:
 
     def get_items(self, user: User) -> list[VaultItem]:
         """
-
-        :param user:
-        :return:
+        Get user’s whole list of item
+        :param user: owner of items
+        :return: list of items
         """
         sql_list_items = "SELECT * FROM T_Items WHERE fk_uid = ?"
         try:
@@ -187,10 +183,10 @@ class Vault:
 
     def get_item(self, user: User, name: str) -> VaultItem | None:
         """
-
-        :param user:
-        :param name:
-        :return:
+        Get user’s item by its name
+        :param user: owner of items
+        :param name: name of item to get (must be unique)
+        :return: Item if it found, else Nothing
         """
         sql_query = "SELECT * FROM T_Items WHERE name = ? AND fk_uid = ?"
         try:
@@ -204,10 +200,10 @@ class Vault:
 
     def edit_item(self, old_item: VaultItem, new_item: VaultItem) -> bool:
         """
-
-        :param old_item:
-        :param new_item:
-        :return:
+        Update any item
+        :param old_item: item to update
+        :param new_item: new information for item
+        :return: true if update is successfully
         """
         sql_update = (
             "UPDATE T_Items SET name = ?, login = ?, password = ? WHERE iid = ?"
@@ -223,9 +219,9 @@ class Vault:
 
     def add_item(self, user: User, item: VaultItem) -> bool:
         """
-
-        :param user:
-        :param item:
+        Add item to the vault
+        :param user: Owner of items
+        :param item: item to store
         :return:
         """
         sql_add_item = (
@@ -240,9 +236,9 @@ class Vault:
 
     def delete_item(self, item: VaultItem) -> bool:
         """
-
-        :param item:
-        :return:
+        Delete item from the vault
+        :param item: Item to delete
+        :return: True if item was successfully deleted
         """
         sql_remove = "DELETE FROM T_Items WHERE iid = ?"
         try:
@@ -253,13 +249,20 @@ class Vault:
             return False
 
     def find_items(self, user: User, search_string: str) -> list[VaultItem]:
+        """
+        Find items by search
+        :param user: owner of items
+        :param search_string: search string
+        :return: list of items
+        """
         sql_list_items = "SELECT * FROM T_Items WHERE name LIKE ? AND fk_uid = ?"
         try:
-            result = self.connection.execute(sql_list_items, [search_string+"%", user.uid])
+            result = self.connection.execute(
+                sql_list_items, [search_string + "%", user.uid]
+            )
             result.row_factory = lambda cursor, row: VaultItem(
                 iid=row[0], name=row[1], login=row[2], password=row[3]
             )
             return result.fetchall()
-
         except sqlite3.IntegrityError:
             return []
