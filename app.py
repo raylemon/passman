@@ -1,103 +1,102 @@
-users: dict[str, str] = {}  # dict[login,password]
-vault: dict[
-    str, dict[str, tuple[str, str]]
-] = {}  # dict[user_login,dict[entry_name,tuple[login,password]]]
+from data import Vault, User, VaultItem
 
 
-def list_entries(user_vault: dict[str, tuple[str, str]]) -> None:
+def list_entries(user: User) -> None:
     """
     List all entries
-    :param user_vault: dictionary of entries
+    :param user: owner
     :return: None
     """
-
-    if len(user_vault) == 0:
+    entries = vault.get_items(user)
+    if len(entries) == 0:
         print("No entries yet.")
     else:
-        for entry in user_vault.keys():
-            print(entry)
+        for entry in entries:
+            print(entry.name)
 
 
-def show_entry(user_vault: dict[str, tuple[str, str]]) -> None:
+def show_entry(user: User) -> None:
     """
     Show full details of selected entry
-    :param user_vault: dictionary of entries
+    :param user: owner
     :return: None
     """
-
     entry_id = input("Type entry name: ")
-    if entry_id in user_vault.keys():
-        entry = user_vault[entry_id]
-        print(f"Login: {entry[0]}, MdP: {entry[1]}")
+    entry = vault.get_item(user, entry_id)
+    if entry is not None:
+        print(f"Login: {entry.login}, MdP: {entry.password}")
     else:
         print("No entry at this name.")
 
 
-def edit_entry(user_vault: dict[str, tuple[str, str]]) -> None:
+def edit_entry(user: User) -> None:
     """
     Update entry
-    :param user_vault: dictionary of entries
+    :param user: owner
     :return: None
     """
     entry_id = input("Type entry name: ")
-    if entry_id in user_vault.keys():
-        entry = user_vault[entry_id]
-        new_name = input(f"Type new name ({entry_id}): ") or entry_id
-        new_login = input(f"Type new entry login ({entry[0]}): ") or entry[0]
-        new_password = input(f"Type new entry password ({entry[1]}): ") or entry[1]
+    entry = vault.get_item(user, entry_id)
+    if entry is not None:
+        new_name = input(f"Type new name ({entry.name}): ") or entry.name
+        new_login = input(f"Type new entry login ({entry.login}): ") or entry.login
+        new_password = (
+            input(f"Type new entry password ({entry.password}): ") or entry.password
+        )
 
-        del user_vault[entry_id]
-        user_vault[new_name] = (new_login, new_password)
+        new_entry = VaultItem(name=new_name, login=new_login, password=new_password)
+        vault.edit_item(user, entry, new_entry)
     else:
         print("No entries found at this name.")
 
 
-def delete_entry(user_vault: dict[str, tuple[str, str]]) -> None:
+def delete_entry(user: User) -> None:
     """
     Remove an entry from vault
-    :param user_vault: dictionary of entries
+    :param user: owner
     :return: None
     """
     entry_id = input("Type entry name: ")
-    if entry_id in user_vault.keys():
-        del user_vault[entry_id]
+    entry = vault.get_item(user, entry_id)
+    if entry is not None:
+        vault.delete_item(user, entry)
     else:
         print("No entries found at this name.")
 
 
-def add_entry(user_vault: dict[str, tuple[str, str]]) -> None:
+def add_entry(user: User) -> None:
     """
     Add an entry to the vault
-    :param user_vault: dictionary of entries
+    :param user: owner
     :return: None
     """
     entry_name = input("Type entry name (must be unique!): ")
-    if entry_name not in user_vault.keys():
+    entry = vault.get_item(user, entry_name)
+    if entry is None:
         entry_login = input("Type login: ")
         entry_password = input("Type password: ")
 
-        entry = (entry_login, entry_password)
-        user_vault[entry_name] = entry
+        entry = VaultItem(name=entry_name, login=entry_login, password=entry_password)
+        vault.add_item(user, entry)
     else:
         print("Name already exists. Please retry.")
 
 
-def search_entry(user_vault: dict[str, tuple[str, str]]) -> None:
+def search_entry(user: User) -> None:
     """
     Search entries
-    :param user_vault: dictionary of entries
+    :param user: owner
     :return: None
     """
     search_string = input("Type beginning of entry name to search: ")
-    for item in user_vault.keys():
-        if item.startswith(search_string):
-            print(item)
+    for item in vault.find_items(user, search_string):
+        print(item.name)
 
 
-def vault_menu(user_vault: dict[str, tuple[str, str]]) -> None:
+def vault_menu(user: User) -> None:
     """
     Show vault menu
-    :param user_vault: dictionary of entries
+    :param user: owner
     :return: None
     """
     while True:
@@ -122,17 +121,17 @@ def vault_menu(user_vault: dict[str, tuple[str, str]]) -> None:
         if ch == "0":
             return
         elif ch == "1":
-            list_entries(user_vault)
+            list_entries(user)
         elif ch == "2":
-            show_entry(user_vault)
+            show_entry(user)
         elif ch == "3":
-            add_entry(user_vault)
+            add_entry(user)
         elif ch == "4":
-            edit_entry(user_vault)
+            edit_entry(user)
         elif ch == "5":
-            delete_entry(user_vault)
+            delete_entry(user)
         elif ch == "6":
-            search_entry(user_vault)
+            search_entry(user)
         else:
             print("Choix invalide!")
 
@@ -144,14 +143,12 @@ def login() -> None:
     """
     log_in = input("Type your username: ")
     password = input("Type your password: ")
-    if log_in not in users.keys():
-        print("Unknown user. Please register first")
-        return
+    user = User(log_in, password)
+    if not vault.validate_user(user):
+        print("Unknown user or password mismatch. Try Again")
+
     else:
-        if password == users[log_in]:
-            vault_menu(vault[log_in])
-        else:
-            print("Password mismatch")
+        vault_menu(user)
 
 
 def create_user() -> None:
@@ -164,11 +161,10 @@ def create_user() -> None:
     confirm = input("Confirm your password: ")
 
     if password == confirm:
-        if log_in in users.keys():
-            print("User already exists. Pleas log in")
+        user = User(login=log_in, password=password)
+        if not vault.add_user(user):
+            print("User already exists. Please log in")
         else:
-            users[log_in] = password
-            vault[log_in] = {}
             print("You are added. Please log in")
     else:
         print("Password mismatch. Please try again")
@@ -184,8 +180,9 @@ def remove_user() -> None:
     confirm = input("Confirm your password: ")
 
     if password == confirm:
-        if log_in in users.keys():
-            del users[log_in]
+        user = User(login=log_in, password=password)
+        if vault.remove_user(user):
+            print("User removed from the system")
         else:
             print("User not found")
     else:
@@ -227,4 +224,5 @@ def menu() -> None:
 
 # main app launcher
 if __name__ == "__main__":
+    vault: Vault = Vault()
     menu()
