@@ -1,6 +1,7 @@
 from controller.tuiController import TuiController
-
+from model.data import Vault
 
 if __name__ == "__main__":
-    control = TuiController()
+    vault = Vault("data.db")
+    control = TuiController(vault)
     control.menu()
