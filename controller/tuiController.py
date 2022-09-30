@@ -3,8 +3,8 @@ from view import tui
 
 
 class TuiController:
-    def __init__(self):
-        self.vault: Vault = Vault()
+    def __init__(self,vault:Vault):
+        self.vault = vault
         self.current_user: User | None = None
 
     def list_entries(self) -> None:
@@ -124,8 +124,8 @@ class TuiController:
         """
         log_in = tui.ask_user("Type your username: ")
         password = tui.ask_user("Type your password: ")
-        user = User(log_in, password)
-        if not self.vault.validate_user(user):
+        user = self.vault.get_user(log_in)
+        if user is None or not self.vault.validate_user(user):
             tui.error("Unknown user or password mismatch. Try Again")
 
         else:
