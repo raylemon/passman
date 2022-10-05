@@ -68,14 +68,19 @@ class GuiController:
     def view(self, value: MainGui):
         self._view = value
 
-    def remove_user(self, password: str):
+    def remove_user(self, password: str) -> bool:
+        if self.current_user is None:
+            return False
         if self.current_user.password == sha256(password.encode("utf-8")).hexdigest():
             if self.vault.remove_user(self.current_user):
                 self.view.info("User removed from the system")
+                return True
             else:
                 self.view.error("User not found")
+                return False
         else:
             self.view.error("Password Mismatch")
+            return False
 
     def add_item(self, name: str, login: str, password: str):
         item = self.vault.get_item(self.current_user, name)
@@ -99,17 +104,25 @@ class GuiController:
         if self.vault.delete_item(item):
             self.view.info("Item successfully removed")
 
-    def reset(self):
-        self.current_user = None
-        self.entries.clear()
-        self.index = 0
+    def reset(self) -> bool:
+        if self.current_user is None:
+            self.view.error("You are not connected")
+            return False
+        else:
+            self.current_user = None
+            self.entries.clear()
+            self.index = 0
+            return True
 
     def search(self, search: str):
-        if search == "":
-            self.entries = self.vault.get_items(self.current_user)
+        if self.current_user is None:
+            self.view.error("You are not connected")
         else:
-            self.entries = self.vault.find_items(self.current_user, search)
+            if search == "":
+                self.entries = self.vault.get_items(self.current_user)
+            else:
+                self.entries = self.vault.find_items(self.current_user, search)
 
-        self.index = 0
-        item = self.entries[self.index]
-        self.view.show(item.name, item.login, item.password)
+            self.index = 0
+            item = self.entries[self.index]
+            self.view.show(item.name, item.login, item.password)
