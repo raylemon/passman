@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import tkinter.constants as tk
-from tkinter import Tk, Frame, Button, Label, Entry, StringVar, Toplevel
-from tkinter.messagebox import showerror, showinfo
-from tkinter.simpledialog import askstring
-
 import controller.guiController as Ctrl
-from PIL import ImageTk,Image
+from PIL import ImageTk, Image
+from ttkbootstrap import Window, Frame, Button, Label, Entry, StringVar, Toplevel
+import ttkbootstrap.constants as tk
+from ttkbootstrap.dialogs import Querybox, Messagebox
 
 
 class LoginWindow(Toplevel):
@@ -60,11 +58,11 @@ class LoginWindow(Toplevel):
         self.destroy()
 
 
-class MainGui(Tk):
+class MainGui(Window):
     """ """
 
     def __init__(self):
-        super().__init__()
+        super().__init__(themename="superhero")
         self._controller = None
         self.title("PassMan - Password Manager")
 
@@ -89,7 +87,7 @@ class MainGui(Tk):
         new_user_img = ImageTk.PhotoImage(Image.open("images/user-add.png"))
         delete_user_img = ImageTk.PhotoImage(Image.open("images/remove-user.png"))
         quit_img = ImageTk.PhotoImage(Image.open("images/quit.png"))
-        search_img = ImageTk.PhotoImage(Image.open("images/search.png").resize((16,16)))
+        search_img = ImageTk.PhotoImage(Image.open("images/search.png").resize((16, 16)))
         clipboard_img = ImageTk.PhotoImage(Image.open("images/clipboard.png"))
 
         # WIDGETS
@@ -102,7 +100,6 @@ class MainGui(Tk):
             top_frame,
             text="Previous item",
             width=width,
-            height=width,
             state=tk.DISABLED,
             command=self.goto_previous,
             image=previous_img,
@@ -114,7 +111,6 @@ class MainGui(Tk):
             top_frame,
             text="New Item",
             width=width,
-            height=width,
             state=tk.DISABLED,
             command=self.do_new_item,
             image=new_img,
@@ -126,7 +122,6 @@ class MainGui(Tk):
             top_frame,
             text="Add Item",
             width=width,
-            height=width,
             state=tk.DISABLED,
             command=self.do_add_item,
             image=add_img,
@@ -138,7 +133,6 @@ class MainGui(Tk):
             top_frame,
             text="Edit Item",
             width=width,
-            height=width,
             state=tk.DISABLED,
             command=self.do_edit_item,
             image=edit_img,
@@ -150,7 +144,6 @@ class MainGui(Tk):
             top_frame,
             text="Delete Item",
             width=width,
-            height=width,
             state=tk.DISABLED,
             command=self.do_delete_item,
             image=delete_img,
@@ -162,7 +155,6 @@ class MainGui(Tk):
             top_frame,
             text="Next item",
             width=width,
-            height=width,
             state=tk.DISABLED,
             command=self.goto_next,
             image=next_img,
@@ -174,23 +166,24 @@ class MainGui(Tk):
 
         Label(top_frame, textvariable=self.sv_user).grid(row=0, column=7, sticky=tk.E)
 
-        login_btn = Button(top_frame, text="Login", width=width, height=width, command=self.log_in, image=login_img)
+        login_btn = Button(top_frame, text="Login", width=width, command=self.log_in, image=login_img)
         login_btn.grid(row=0, column=8, sticky=tk.E)
         login_btn.image = login_img
 
-        na_btn = Button(top_frame, text="New account", width=width, height=width, command=self.new_account,image=new_user_img)
+        na_btn = Button(top_frame, text="New account", width=width, command=self.new_account, image=new_user_img)
         na_btn.grid(row=0, column=9, padx=padx)
         na_btn.image = new_user_img
 
-        ra_btn = Button(top_frame, text="Remove account", width=width, height=width, command=self.remove_account,image=delete_user_img)
+        ra_btn = Button(top_frame, text="Remove account", width=width, command=self.remove_account,
+                        image=delete_user_img)
         ra_btn.grid(row=0, column=10, padx=padx)
         ra_btn.image = delete_user_img
 
-        logout_btn = Button(top_frame, text="Logout", width=width,height=width, command=self.log_out,image=logout_img)
+        logout_btn = Button(top_frame, text="Logout", width=width, command=self.log_out, image=logout_img)
         logout_btn.grid(row=0, column=11, padx=padx)
         logout_btn.image = logout_img
 
-        quit_btn = Button(top_frame, text="Quit", width=width,height=width, command=self.close,image=quit_img)
+        quit_btn = Button(top_frame, text="Quit", width=width, command=self.close, image=quit_img)
         quit_btn.grid(row=0, column=12, padx=padx)
         quit_btn.image = quit_img
 
@@ -207,7 +200,7 @@ class MainGui(Tk):
             row=0, column=1, sticky=tk.EW
         )
 
-        search_btn = Button(main_frame, text="Search", anchor=tk.E, width=width/2,height=width/2, command=self.do_search,image=search_img)
+        search_btn = Button(main_frame, text="Search", command=self.do_search, image=search_img)
         search_btn.grid(row=0, column=2)
         search_btn.image = search_img
 
@@ -237,8 +230,6 @@ class MainGui(Tk):
             bottom_frame,
             text="Copy login to clipboard",
             command=self.copy_login,
-            #width=width,
-            height=width,
             image=clipboard_img,
             compound=tk.LEFT,
         )
@@ -247,8 +238,6 @@ class MainGui(Tk):
             bottom_frame,
             text="Copy password to clipboard",
             command=self.copy_password,
-            #width=width,
-            height=width,
             image=clipboard_img,
             compound=tk.LEFT
         )
@@ -302,7 +291,7 @@ class MainGui(Tk):
             self.error("You are not connected")
             return
         if self.controller.remove_user(
-            askstring("Confirmation", "Please enter your password to delete", show="*")
+                Querybox.get_string("Please enter your password to delete", "Confirmation", parent=self, show="*")
         ):
             self.controller.reset()
             self.toggle_buttons(False)
@@ -330,13 +319,11 @@ class MainGui(Tk):
     def do_search(self):
         self.controller.search(self.sv_search.get())
 
-    @staticmethod
-    def error(message: str):
-        showerror("Error", message)
+    def error(self, message: str):
+        Messagebox.show_error(message, "Error", self, True)
 
-    @staticmethod
-    def info(message: str):
-        showinfo("Info", message)
+    def info(self, message: str):
+        Messagebox.show_info(message, "Info", self, True)
 
     @property
     def controller(self) -> Ctrl.GuiController:
