@@ -1,0 +1,335 @@
+# LTeX: language=fr
+#+title: Passman
+#+author: Cédric Vanconingsloo
+
+* Introduction
+Le but de ce projet est de concevoir une application avec une interface graphique et une base de données embarquée. Cette application sera codée en Python objet, avec le modèle MVC et des tests écrits en *pytest*.
+
+Ce projet sera amélioré plusieurs fois.
+
+* Description du projet
+** Projet de logiciel: Passman, un gestionnaire de mots de passe.
+Nous allons concevoir un gestionnaire de mots de passe. Ce projet permettra à un ou plusieurs utilisateurs de stocker leurs mots de passe dans un fichier binaire pour commencer, puis dans une base de données SQLite.
+
+** Outils utilisés
++ /Python/ *3.11* comme langage de programmation,
++ /git/ avec *git flow* comme système de gestion de versions,
++ /pdm/ comme gestionnaire de paquets,
++ /black/ comme formateur de fichiers,
++ /ruff/ et /pylyzer/ comme analyseurs sémantiques,
++ /VSCode/ comme IDE de programmation avec plugins dédiés (ou PyCharm),
++ /tkinter/ comme interface graphique avec /ttkbootsrap/ (ou /PySide6/ ultérieurement),
++ /DB Browser for SQLite/ comme gestionnaire de base de données.
++ /Draw.io/ pour le prototypage de la base de données et de l’interface graphique.
+
+* Analyse préliminaire
+Un *utilisateur* sera identifié par un /login/ unique et un /mot de passe/. Chaque utilisateur possède un /coffre/ contenant des éléments.
+
+Un *élément* sera identifié par un /nom/ unique, un /login/ et un /mot de passe/.
+
+L’application sera une application en *terminal*. L’application permettra:
++ de créer un utilisateur et le supprimer,
++ d’ouvrir le coffre de l’utilisateur connecté (=login),
++ d’ajouter, modifier et supprimer des éléments dans le coffre,
++ de lister le contenu du coffre-fort (uniquement les *noms* pour commencer),
++ de voir les détails d’un élément sélectionné,
++ de chercher un élément dans le coffre avec un système de recherche.
+
+  Pour le moment, les informations ne seront pas stockées dans un fichier, uniquement en mémoire.
+
+* Analyse de la base de données
+La base de données est analysée selon le modèle *Entités/Associations*. Deux tables seront nécessaires pour le fonctionnement du programme.
+
+La table =T_Users= contiendra les informations liées à l’utilisateur, à savoir un /identifiant/ interne, un /login/ unique et un /mot de passe/ crypté.
+
+La table =T_Items= contiendra les informations liées à un élément, à savoir un /identifiant/ interne, un /nom/ unique, un /login/ et le /mot de passe/ associé à un /utilisateur/.
+
+[[./imgs/data.png]]
+
+Le moteur de la base de données sera *SQLite*. La DB sera créée dynamiquement lors de la première exécution du programme.
+
+* Prototypage de l’interface graphique
+L’interface graphique sera réalisée avec *tkinter* et la bibliothèque /ttkbootstrap/ pour lui apporter la gestion des thèmes de couleur. J’ai imaginé l’interface suivante:
+
+[[./imgs/proto.png]]
+
+* Les outils
+** Python
+Python est un langage de programmation objet moderne et simple à utiliser. Il est /modulaire/ et /extensible/ via des *packages*.
+
+*** Les *packages*
+Un *module* est un ensemble de fonctions regroupées dans un fichier. Cette construction permet de créer un /kit/ de fonctions pouvant être réutilisées dans différents programmes.
+
+Un *package* est un ensemble de /modules/ regroupés dans un *dossier*.
+
+Python a une architecture modulaire, ce qui signifie que l’on peut étendre ses possibilités en ajoutant différents modules. Lors de l’installation de Python, nous avons déjà installé certains modules (/random/, /sys/, /tkinter/ …). Mais il se trouve parfois que nous ayons des besoins précis (créer une interface graphique en Qt, par exemple) qui nécessite des /packages/ qui ne sont pas fournis de base. Dans ce cas, nous utiliserons des /packages/ externes, au moyen d’outils tels que *pip* ou *pdm*, qui nous permettront d’installer et d’utiliser d’autres modules.
+
+Cependant, en ajoutant ces modules tiers, nous allons complexifier notre installation de Python. Parfois, selon nos projets, nous allons utiliser des bibliothèques différentes de celles installées, ou tester des nouvelles versions,etc. Pour éviter de «polluer» notre environnement Python par différents /packages/, nous allons travailler avec un *environnement virtuel*.
+
+Nous rendons aussi plus complexe la procédure de déploiement du programme chez nos clients. Mais nous utiliserons un module qui résoudra ce problème ultérieurement.
+
+*** Les environnements virtuels
+Un environnement virtuel est un dossier, souvent situé dans le répertoire du projet, qui va contenir une copie de l’environnement de travail Python. Cela permet d’isoler les /packages/ à installer dans ce projet uniquement et de conserver une base de Python «propre». Il est vivement conseillé de créer un environnement virtuel pour chaque projet Python, surtout si vous souhaitez utiliser des packages externes.
+
+Pour créer un environnement virtuel, Python possède un module nommé *virtualenv*. Mais il en existe d’autres: /conda/, /pipenv/, /poetry/, et /pdm/ pour ne citer qu’eux. Nous utiliserons ici *pdm*, qui est un outil récent mais qui simplifie pas mal le travail.
+
+*** pdm (Python Dependency Manager)
+*PDM* est un outil similaire à /pip/ en plus puissant. *PDM* va installer et gérer les différentes bibliothèques que l’on va utiliser dans notre logiciel et permet également la création d’un environnement virtuel.
+
+**** Installation de PDM
+*PDM* nécessite Python 3.7 au minimum. Installons *PDM* via la ligne de code suivante:
++ Windows:
+#+begin_src powershell
+(Invoke-WebRequest -Uri https://raw.githubusercontent.com/pdm-project/pdm/main/install-pdm.pv -UseBasicParsing).Content | python -
+#+end_src
+
++ Linux:
+#+begin_src bash
+curl -sSL https://raw.githubusercontent.com/pdm/project/pdm/main/install-pdm.pv | python3 -
+#+end_src
+
+** git et git flow
+*** git
+*Git* est un /VCS/, c.-à-d. un /système de gestion de contrôle de versions/. Il a pour objectif de gérer les différentes versions (ou l’évolution) de la conception d’un logiciel. *Git* se base sur l’utilisation de /branches/. Une *branche* permet de modifier le code sans impacter le code déjà écrit. Par défaut, un projet /git/ est créé avec la branche ~master~ par défaut. De cette branche, on peut faire dériver d’autres branches pour implémenter de nouvelles fontions ou effectuer des corrections.
+
+*** git flow
+*Git flow* est un procédé d’utilisation de /git/ basé sur l’utilisation de plusieurs branches, chacune ayant une utilité bien précise:
++ la branche /main/,
++ la branche /develop/,
++ les branches /features/,
++ la branche /release/,
++ les branches /hotfixes/.
+
+[[./imgs/gitflow.png]]
+
+**** La branche *main*
+Cette branche est la branche principale, la plus stable. Chaque ~commit~ effectué sur cette branche correspond à une nouvelle version du programme. Cependant, nous ne travaillons *jamais* sur la branche /main/. On utilisera la branche /develop/ pour faire évoluer le code.
+
+**** La branche *develop*
+Cette branche va contenir tout l’historique du code. Elle doit nécessairement être stable également. Dans l’idéal, les développeurs ne doivent pas travailler directement sur /develop/ en parallèle pour éviter les conflits. Pour implémenter une nouvelle fonctionnalité, chaque développeur devra travailler sur une /feature/.
+
+**** La branche *feature*
+Cette branche est celle que les développeurs vont utiliser pour ajouter des fonctionnalités. Chaque fonctionnalité sera indépendante des autres. À terme, la branche sera fusionnée dans la branche /develop/.
+
+Nous travaillerons sur différentes /features/ tout au long de l’évolution du projet.
+
+**** La branche *release*
+Cette branche va fusionner la branche /develop/ dans la branche /master/. Quand on juge avoir implémenté suffisamment de /features/, on va effectuer une /release/ du programme. On parlera de ~gel~ des fonctionnalités. La branche *release* permet aussi de corriger les différents bugs avant de fusionner les branches /develop/ et /master/ et de fournir une version au client.
+
+**** La branche *hotfix*
+Cette branche est une dérivation directe de la branche /master/. Elle sert à corriger les bugs trouvés par les utilisateurs et qui doivent être corrigés en priorité. Dans l’idéal, elle devrait être très peu utilisée.
+
+*** Utiliser git flow
+Pour faciliter le travail avec /git flow/, nous utiliserons le plugin ~git flow~ pour VSCode.
+
+*** Black, ruff, pylyzer
+*Black* est un *formateur de code* pour Python. Le but de cet outil est d’organiser son code en suiant un certain nombre de règles visuelles. Cela va rendre le code lisible pour tout le monde.
+
+*Ruff* est un *linter*, c.-à-d. qu’il va analyser le code /pendant l’écriture/ et va vous avertir des erreurs de codage. De même, *pylyzer* est un analyseur de code, qui va détecter les erreurs sémantiques. Tous ces outils vont nous permettre de garder un code clair, cohérent et «propre».
+
+*** SQLite
+*SQLite* est un moteur de base de données SQL petit, léger et complet. Il est utilisé dans les smartphones et tout outil nécessitant de stocker des données. Son principal avantage est qu’il ne nécessite pas d’installer ou d’utiliser un serveur SQL distant, nous pouvons créer des bases de données embarquées.
+
+*** Pytest
+*Pytest* est un framework de /tests unitaires/ permettant de faire des tests et de vérifier si les conditions sont correctes ou non. Cela permet de s’assurer que les modifications effectuées dans le code n’auront pas d’impacts sur le reste du programme. Ainsi, il est possible de tester chaque fonction, dans la mesure du possible.
+
+*** Tkinter et ttkbootstrap
+*Tkinter* est une bibliothèque graphique intégrée à la bibliothèque standard de Python. Cette bibliothèque se compose de *widgets* (boutons, fenêtres, etc.) paramétrables.
+
+*Ttkbootstrap* est une amélioration visuelle de /tkinter/ qui permet d’utiliser des thèmes graphiques plus colorés que le thème de base.
+
+* Réalisation
+Avant de commencer à coder, nous allons créer un dossier de projet avec *pdm*. Ce code sera hébergé sur *github* (obligatoire).
+
++ Ouvrons un nouveau dossier dans *VSCode*.
++ Dans le projet ouvert, ouvrons le /terminal/. PDM étant un outil en ligne de commande, nous allons principalement utiliser le terminal interne de VSCode.
+  #+begin_src powershell
+  pdm init
+  pdm add -dG tools black ruff pylyzer pytest
+  git init
+  git flow init
+#+end_src
+
++ Créons un nouveau projet via la commande ~pdm init~. Répondez aux questions de l’assistant.
++ Pdm va créer plusieurs éléments, dont le fichier =pyproject.toml=.
++ Ajoutons à notre projet les outils *black*, *ruff* et *pylyzer*. Dans le terminal, tapez ~pdm add -dG tools black ruff pylyzer~.
++ Dans le fichier ~pyproject.toml~, ajoutons les éléments suivants pour paramétrer *ruff*.
+  #+begin_src toml
+  [tool.ruff]
+  select = ["E","F","I"]
+  #+end_src
+  Nous ajoutons la gestion des règles de tri des différents modules.
++ Dans le terminal, tapons ~git init~ pour initialiser un dépôt local git. Nous utiliserons l’interface graphique de git ultérieurement.
++ Dans le terminal, tapons ~git flow init~ pour démarrer le support de git flow. Répondez aux différentes questions.
++ Nous pouvons fermer le terminal.
++ Dans le gestionnaire de contrôle, validons les changements. Comme message, indiquez «Project initialization».
+
+
+** Première version du logiciel
+Dans cette première version, nous allons réaliser le projet sans interface graphique, en utilisant uniquement le terminal. Nous écrirons *et documenterons* les fonctions selon l’analyse préliminaire ci-dessus. Nous allons créer une première /feature/ contenant cette première version. Elle nous permet de mesurer la difficulté du projet et d’établir les premières fonctions structurantes.
+
+#+begin_src python
+def something()
+"""
+Écrivez des portions de code sur des points de conception importants selon vous.
+
+N’oubliez pas d’expliquer ces portions de code. Le code source complet sera mis en annexe (lien via github également.)
+"""
+pass
+#+end_src
+
+** Réécriture du logiciel en POO
+Lors de la réalisation de ce projet, je me suis vite aperçu de la difficulté de créer des structures de données en dictionnaire. En modifiant mon code pour apporter la dimension objet, j’ai pu séparer mon code de /données/ de mon code /applicatif/.
+
+#+begin_src python
+class User:
+    def __init__(self,login:str,password:str) -> None:
+        self.login = login
+        self.password = password
+#+end_src
+
+Concernant les classes de données, en lisant la documentation de Python, j’ai remarqué qu’il existait des *dataclasses*, simplifiant encore plus l’écriture de ce type d’objet:
+#+begin_src python
+@dataclass
+class User:
+    login:str
+    password:str
+#+end_src
+
+** Ajout des tests avec Pytest
+*Pytest* est un framework de tests unitaires. Un /test unitaire/ est une procédure permettant de vérifier le bon fonctionnement d’une portion d’un programme. On va écrire un test pour vérifier le résultat d’une /exécution/ à un résultat pré-établi. Un test unitaire est souvent définit selon 4 phases:
+
++ /le setup/: on va définir l’environnement de tests reproductible (appelé une /fixture/);
++  /l’exercice/: on exécute le module ou la fonction à tester;
++ /l’assertion/: on compare les résultats obtenus par l’exercice avec un résultat prédéfini;
++ /le teardown/: on désinstalle les fixtures pour retrouver l’état initial du système.
+
+L’avantage de *Pytest* est qu’il est un framework simple d’utilisation avec des tests facilement lisibles.
+
+Je me sers de Pytest pour tester les différentes fonctions *métier* du code, comme l’ajout, la modification et la suppression d’un utilisateur. Le but de ces tests est de vérifier que les opérations nécessaires au bon fonctionnement du logiciel restent fonctionnelles même lors du passage au stockage des données dans la DB.
+
+#+begin_src python
+def test_user_exists(self):
+    assert self.vault.get_user("") is None
+#+end_src
+
+** Ajouter des couleurs dans le terminal avec la bibliothèque =colorama=
+La bibliothèque =colorama= est un module python qui permet l'affichage des couleurs dans la console. Je l'importe dans mon projet via la commande src_powershell{pdm add colorama}.
+
+Pour fonctionner, il faut importer la bibliothèque et l'initialiser.
+#+begin_src python
+import colorama
+colorama.init(autoreset=True)
+#+end_src
+Le paramètre =autoreset= va réinitialiser les réglages par défaut de la console.
+
+Pour modifier les couleurs, on ajoutera dans le texte à imprimer à l'écran les paramètres de couleurs:
+
+#+begin_src python
+def error(message:str): -> None
+""" show error
+    :param message: prompt message
+    :return: Nothing
+"""
+return input(message)
+#+end_src
+
+** Réécriture du logiciel avec le pattern MVC
+Le pattern *MVC* (Modèle-Vue-Contrôleur) est un motif de conception logicielle destiné principalement aux interfaces graphiques. Ce motif est composé de trois types de modules:
+
+- Le modèle :: Le modèle est un objet (ou groupe d'objets) contenant les données et la logique de conception en rapport avec les données.
+  Le modèle est indépendant de la vue et du contrôleur.
+
+- La vue :: La vue est la partie visible de l'interface graphique, qu'elle soit textuelle ou utilisable à la souris. La vue contient des éléments visuels ainsi que la logique pour afficher les données en provenance du modèle.
+
+- Le contrôleur :: Le contrôleur est le module qui va traiter des actions de l'utilisateur, agir sur le modèle de données et envoyer ces données à la vue.
+
+  Dans mon logiciel, j'ai découpé mon projet en modules respectant le pattern *MVC*.
+
+** Intégration de la base de données SQLite
+Pour le stockage des données, je me suis tourné vers la bibliothèque *sqlite*, car elle est intégrée nativement à Python. De plus, c'est un SGBD léger et embarqué.
+
+La base de données va agir sur la partie *modèle* du MVC. J’ai écrit une nouvelle classe permettant de gérer les fonctions principales d’une base de données, à savoir la création, la lecture, la modification et la suppression d’un utilisateur et d’un élément.
+
+J’ai choisi également de créer automatiquement la base de données si elle n’existe pas au premier lancement du programme.
+
+La connexion à une base de données se fait via la méthode =connect=
+
+#+begin_src python
+self.connection = sqlite3.connect(db_path)
+#+end_src
+
+Cette connexion renvoie un *curseur* permettant de traiter les données.
+
+La bibliothèque *sqlite* permet de créer sur base d’un curseur une =row_factory=, une «fabrique de ligne», qui permet de convertir directement une ligne de la base de données en un objet Python:
+
+#+begin_src python
+def get_user(self, login:str) -> Optional[User]:
+    sql_query = "SELECT * FROM T_Users WHERE login = ?"
+    try:
+        result = self.connection.execute(sql_query,[login])
+        result.row_factory = lambda cursor, row: User(uid=row[0], login=row[1], password=row[2])  # Convertit une ligne en un utilisateur.
+        return result.fetchone()
+    except sqlite3.IntegrityError:
+        return None
+#+end_src
+
+** Conception de l’interface graphique avec Tkinter
+Pour l’interface graphique, j’ai décidé d’utiliser *[[file:./tkinter.org][tkinter]]* qui est aussi une bibliothèque de base fournie avec Python. L’interface graphique en tkinter va modifier la /vue/ ainsi que le /contrôleur/ du pattern MVC.
+
+Le contrôleur doit être modifié, car il y a plus d’interactions avec l’utilisateur que dans la version terminal.
+
+#+attr_latex: :width .9\textwidth
+[[https://raw.githubusercontent.com/raylemon/passman/site-imgs/passman.png]]
+
+J’ai également modifié le lanceur de l’application pour ajouter la possibilité de lancer le programme en version terminal en utilisant le module =argparse=.
+#+begin_src  python
+if __name__ == "__main":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c","--console", help="Terminal User Interface")
+    args = parser.parse_args()
+    vault = Vault("data.db")
+
+                if args.console:
+                    control = TuiController(vault)
+                    control.menu()
+            else:
+                control = GuiController(vault)
+                view = MainGui()
+                view.controller = control
+                control.view = view
+                control.start()
+#+end_src
+* Améliorations
++ Une première piste d’amélioration serait d’utiliser la suite d’outils =PySide6= pour remplacer tkinter.
++ Une seconde piste serait *d’internationaliser* et de *localiser* (=traduire) l’application.
++ Une troisième piste serait de créer un *exécutable autonome* pour simplifier l’installation de l’application chez le client.
+
+* Bibliographie
++ CHAZALET, Sébastien. /Python 3 - Les fondamentaux du langage/. Éditions ENI, juin 2014.
++ [[https://pdm.fming.dev/latest]], consulté le 07/11/2022.
++ [[https://www.python.org/3/]], consulté le 07/11/2022.
++ https://www.atlassian.com/fr/git/tutorials/comparing-workflows/gitflow-workflow, consulté le 09/11/2022.
++ [[https://creativetech-fr.devoteam.com/2020/02/24/gitflow-les-bonnes-pratiques-de-git]], consulté le 09/11/2022.
++ [[https://git-flow.readthedocs.io/fr/latest/]],consulté le 09/11/2022.
++ [[https://www.vigicorp.fr/blog/workflow-gitflow/]], consulté le 09/11/2022.
++ [[https://python.doctor]], consulté le 11/11/2022.
++ [[https://lemagit.fr/definition/Programmation-orientee-objet]], consulté le 11/11/2022.
++ https://pythonforge.com/classes-python, consulté le 15/11/2022.
++ [[https://openclassrooms.com/fr/courses/4425126/]], consulté le 18/11/2022.
++ https://docs.pytest.org, consulté le 19/11/2022.
++ https://www.giacomodebidda.com/posts/mvc-pattern-in-python-introduction-and-basicmodel/, consulté le 22/11/2022.
+
+* Annexes
+** Annexe 1
+Le code source du programme. Disponible sur [[https://github.com/raylemon/passman]]
+
+** Annexe 2
+Le schéma d’analyse de la base de données.
+
+[[./imgs/data.png]]
+
+** Annexe 3
+Le prototype d’interface graphique.
+
+[[./imgs/proto.png]]

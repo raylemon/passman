@@ -1,0 +1,19 @@
+[project]
+name = "passman"
+version = "0.1.0"
+description = "Password manager"
+authors = [{ name = "raylemon", email = "raylemon0424@gmail.com" }]
+dependencies = []
+requires-python = ">=3.11,<3.12"
+readme = "README.md"
+license = { text = "GPL" }
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm.dev-dependencies]
+tools = ["black>=23.7.0", "ruff>=0.0.286", "pylyzer>=0.0.41"]
+
+[tool.ruff]
+select = ["E", "F", "I"]
